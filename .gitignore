@@ -1,0 +1,25 @@
+docs/_build
+build
+dist
+*.egg-info
+.eggs/
+*.pyc
+.coverage**
+htmlcov
+__pycache__
+docs/**.html
+Cargo.lock
+target
+*.swp
+*.snap
+parts
+stage
+prime
+.vscode
+.idea
+.mypy_cache
+.spread-reuse.*
+pip-wheel-metadata/
+# direnv
+.envrc
+.direnv
