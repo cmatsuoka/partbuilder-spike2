@@ -14,7 +14,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-
 from testtools.matchers import Equals
 
 from tests import unit
@@ -23,18 +22,20 @@ from partbuilder._part import Part, sort_parts
 
 
 class TestPartOrdering(unit.TestCase):
-   def test_sort_parts(self):
-       p1 = Part("foo", {})
-       p2 = Part("bar", {"after": [ "baz" ]})
-       p3 = Part("baz", {"after": [ "foo" ]})
+    def test_sort_parts(self):
+        p1 = Part("foo", {})
+        p2 = Part("bar", {"after": ["baz"]})
+        p3 = Part("baz", {"after": ["foo"]})
 
-       x = sort_parts([p1, p2, p3])
-       self.assertThat(x, Equals([p1, p3, p2]))
+        x = sort_parts([p1, p2, p3])
+        self.assertThat(x, Equals([p1, p3, p2]))
 
-   def test_sort_parts_cycle(self):
-       p1 = Part("foo", {})
-       p2 = Part("bar", {"after": [ "baz" ]})
-       p3 = Part("baz", {"after": [ "bar" ]})
+    def test_sort_parts_cycle(self):
+        p1 = Part("foo", {})
+        p2 = Part("bar", {"after": ["baz"]})
+        p3 = Part("baz", {"after": ["bar"]})
 
-       raised = self.assertRaises(errors.PartbuilderPartCycleException, sort_parts, [p1, p2, p3])
-       self.assertThat(raised._part_name, Equals("bar"))
+        raised = self.assertRaises(
+            errors.PartbuilderPartCycleException, sort_parts, [p1, p2, p3]
+        )
+        self.assertThat(raised._part_name, Equals("bar"))

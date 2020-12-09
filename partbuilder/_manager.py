@@ -24,17 +24,16 @@ from partbuilder.plugins import Plugin
 
 class LifecycleManager:
     def __init__(
-        self, *,
+        self,
+        *,
         parts: Dict[str, Any],
         build_packages: List[str] = [],
-
         work_dir: str = ".",
         target_arch: str = "",
         platform_id: str = "",
         platform_version_id: str = "",
         parallel_build_count: int = 1,
         local_plugins_dir: str = "",
-
         **custom_args,  # custom passthrough args
     ):
         self._validator = Validator(parts)
@@ -45,13 +44,12 @@ class LifecycleManager:
         self._sequencer = sequencer.Sequencer(self._parts)
 
         self._step_info = StepInfo(
-            work_dir = work_dir,
-            target_arch = target_arch,
-            platform_id = platform_id,
-            platform_version_id = platform_version_id,
-            parallel_build_count = parallel_build_count,
+            work_dir=work_dir,
+            target_arch=target_arch,
+            platform_id=platform_id,
+            platform_version_id=platform_version_id,
+            parallel_build_count=parallel_build_count,
         )
-
 
     def clean(self, parts: List[str]) -> None:
         pass
@@ -69,11 +67,15 @@ class LifecycleManager:
         steps = self._sequencer.run_to(State.PRIME, parts)
 
 
-def register_pre_step_callback(callback: Callable[[StepInfo], None], steps: List[str]) -> None:
+def register_pre_step_callback(
+    callback: Callable[[StepInfo], None], steps: List[str]
+) -> None:
     pass
 
 
-def register_post_step_callback(callback: Callable[[StepInfo], None], steps: List[str]) -> None:
+def register_post_step_callback(
+    callback: Callable[[StepInfo], None], steps: List[str]
+) -> None:
     pass
 
 

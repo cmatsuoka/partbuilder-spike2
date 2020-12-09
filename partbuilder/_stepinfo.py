@@ -14,12 +14,16 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+import os
 import platform
+
 
 class StepInfo:
     """All the information needed by part handlers."""
+
     def __init__(
-        self, *,
+        self,
+        *,
         work_dir: str,
         target_arch: str,
         platform_id: str,
@@ -153,4 +157,3 @@ _ARCH_TRANSLATIONS = {
         "core-dynamic-linker": "lib64/ld-linux-x86-64.so.2",
     },
 }
-

@@ -51,4 +51,3 @@ def sort_parts(p: List[Part]) -> List[Part]:
         all_parts.remove(top_part)
 
     return sorted_parts
-

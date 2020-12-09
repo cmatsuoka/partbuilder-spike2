@@ -7,7 +7,6 @@ import shutil
 import tempfile
 
 
-
 class TempCWD(fixtures.Fixture):
     def __init__(self, rootdir=None):
         super().__init__()
@@ -29,4 +28,3 @@ class TempCWD(fixtures.Fixture):
         if not self._data_path:
             self.addCleanup(shutil.rmtree, self.path, ignore_errors=True)
         os.chdir(self.path)
-

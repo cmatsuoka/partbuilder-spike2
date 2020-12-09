@@ -25,15 +25,15 @@ class Step(enum.Enum):
     STAGE = 3
     PRIME = 4
 
-   def __str__(self):
-       return self.name.lower()
+    def __str__(self):
+        return self.name.lower()
 
-   def previous_steps(self): -> List[Step]:
-       pass
+    def previous_steps(self) -> List[Step]:
+        pass
 
 
 class StepAction:
-    def __init__(self, part_name: str, step: Step, *, comment: str=""):
+    def __init__(self, part_name: str, step: Step, *, comment: str = ""):
         self.name = name
         self.step = step
         self.comment = comment
