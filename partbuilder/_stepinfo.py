@@ -14,8 +14,13 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+import logging
 import os
 import platform
+
+from partbuilder import errors
+
+logger = logging.getLogger(__name__)
 
 
 class StepInfo:
@@ -48,7 +53,7 @@ class StepInfo:
         self.stage_dir = os.path.join(work_dir, "stage")
         self.prime_dir = os.path.join(work_dir, "prime")
 
-        for key, value in xargs.items():
+        for key, value in custom_args.items():
             setattr(self, key, value)
 
     @property
@@ -79,6 +84,13 @@ class StepInfo:
             self.__target_machine = _find_machine(target_arch)
             logger.info("Setting target machine to {!r}".format(target_arch))
         self.__machine_info = _ARCH_TRANSLATIONS[self.__target_machine]
+
+
+def _find_machine(target_arch):
+    machine = _ARCH_TRANSLATIONS.get(target_arch, None)
+    if not machine:
+        raise errors.PartbuilderInvalidArchitecture(target_arch)
+    return machine
 
 
 def _get_platform_architecture() -> str:

@@ -14,15 +14,21 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from typing import Any, Dict, List
+import os.path
+from typing import Any, Dict, List, Set
 
 from partbuilder import errors
 
 
 class Part:
-    def __init__(self, name: str, data: Dict[str, Any]):
+    def __init__(self, name: str, data: Dict[str, Any], *, work_dir: str = "."):
         self.name = name
         self.data = data
+        self.part_dir = os.path.join(work_dir, name)
+        self.part_src_dir = os.path.join(self.part_dir, "src")
+        self.part_build_dir = os.path.join(self.part_dir, "build")
+        self.part_install_dir = os.path.join(self.part_dir, "install")
+        self.part_state_dir = os.path.join(self.part_dir, "state")
 
 
 def sort_parts(p: List[Part]) -> List[Part]:
@@ -45,9 +51,32 @@ def sort_parts(p: List[Part]) -> List[Part]:
                 top_part = part
                 break
         if not top_part:
-            raise errors.PartbuilderPartCycleException(part.name)
+            raise errors.PartbuilderPartDependencyCycle(part.name)
 
         sorted_parts = [top_part] + sorted_parts
         all_parts.remove(top_part)
 
     return sorted_parts
+
+
+def get_dependencies(
+    part_name: str, *, parts: List[Part], recursive: bool = False
+) -> Set[Part]:
+    """Returns a set of all the parts upon which part_name depends."""
+
+    part = next((p for p in parts if p.name == part_name), None)
+    if not part:
+        raise errors.PartbuilderInvalidPartName(part_name)
+
+    dependency_names = set(part.data.get("after", []))
+    dependencies = {p for p in parts if p.name in dependency_names}
+
+    if recursive:
+        # No need to worry about infinite recursion due to circular
+        # dependencies since the YAML validation won't allow it.
+        for dependency_name in dependency_names:
+            dependencies |= get_dependencies(
+                dependency_name, parts=parts, recursive=recursive
+            )
+
+    return dependencies

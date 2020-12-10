@@ -17,8 +17,9 @@
 from testtools.matchers import Equals
 
 from tests import unit
+from partbuilder import _part
 from partbuilder import errors
-from partbuilder._part import Part, sort_parts
+from partbuilder._part import Part
 
 
 class TestPartOrdering(unit.TestCase):
@@ -27,7 +28,7 @@ class TestPartOrdering(unit.TestCase):
         p2 = Part("bar", {"after": ["baz"]})
         p3 = Part("baz", {"after": ["foo"]})
 
-        x = sort_parts([p1, p2, p3])
+        x = _part.sort_parts([p1, p2, p3])
         self.assertThat(x, Equals([p1, p3, p2]))
 
     def test_sort_parts_cycle(self):
@@ -36,6 +37,30 @@ class TestPartOrdering(unit.TestCase):
         p3 = Part("baz", {"after": ["bar"]})
 
         raised = self.assertRaises(
-            errors.PartbuilderPartCycleException, sort_parts, [p1, p2, p3]
+            errors.PartbuilderPartDependencyCycle, _part.sort_parts, [p1, p2, p3]
         )
         self.assertThat(raised._part_name, Equals("bar"))
+
+
+class TestPartDependencies(unit.TestCase):
+    def test_get_dependencies(self):
+        p1 = Part("foo", {})
+        p2 = Part("bar", {"after": ["baz"]})
+        p3 = Part("baz", {"after": ["foo"]})
+
+        x = _part.get_dependencies("foo", parts=[p1, p2, p3])
+        self.assertThat(x, Equals(set()))
+
+        x = _part.get_dependencies("bar", parts=[p1, p2, p3])
+        self.assertThat(x, Equals({p3}))
+
+        x = _part.get_dependencies("bar", parts=[p1, p2, p3], recursive=True)
+        self.assertThat(x, Equals({p3, p1}))
+
+        raised = self.assertRaises(
+            errors.PartbuilderInvalidPartName,
+            _part.get_dependencies,
+            "invalid",
+            parts=[p1, p2, p3],
+        )
+        self.assertThat(raised._part_name, Equals("invalid"))

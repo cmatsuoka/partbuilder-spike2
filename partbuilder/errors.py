@@ -46,18 +46,51 @@ class PartbuilderException(Exception, ABC):
 
 
 class PartbuilderReportableException(PartbuilderException, ABC):
-    """Helper class for reportable Snapcraft Exceptions."""
+    """Helper class for reportable exceptions."""
 
     def get_reportable(self) -> bool:
         return True
 
 
-class PartbuilderPartCycleException(PartbuilderException):
+class PartbuilderInternalError(PartbuilderReportableException):
+    def __init__(self, msg: str):
+        self._msg = msg
+
+    def get_brief(self) -> str:
+        return f"Internal error: {self._msg}"
+
+    def get_resolution(self) -> str:
+        return "Please contact the developers to report this bug."
+
+
+class PartbuilderPartDependencyCycle(PartbuilderException):
     def __init__(self, part_name: str):
         self._part_name = part_name
 
     def get_brief(self) -> str:
-        return f'Part "{self._part_name}" is part of a circular dependency chain.'
+        return f'Part "{self._part_name}" belongs to a circular dependency chain.'
 
     def get_resolution(self) -> str:
-        return f"Review 'after' entries in the parts definition to remove dependency cycles."
+        return "Review the parts definition to remove dependency cycles."
+
+
+class PartbuilderInvalidPartName(PartbuilderException):
+    def __init__(self, part_name: str):
+        self._part_name = part_name
+
+    def get_brief(self) -> str:
+        return f'A part named "{self._part_name}" is not defined in the parts list.'
+
+    def get_resolution(self) -> str:
+        return "Check for typos in the part name or in the parts definition."
+
+
+class PartbuilderInvalidArchitecture(PartbuilderException):
+    def __init__(self, arch_name: str):
+        self._arch_name = arch_name
+
+    def get_brief(self) -> str:
+        return f'Architecture "{self._arch_name}" is invalid.'
+
+    def get_resolution(self) -> str:
+        return "Make sure the requested architecture is supported."

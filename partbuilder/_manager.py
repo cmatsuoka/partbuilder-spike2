@@ -17,8 +17,9 @@
 from typing import Any, Callable, Dict, List
 
 from ._stepinfo import StepInfo
-from ._part import Part, sort_parts
-from ._step import State
+from ._part import Part
+from ._step import Step
+from partbuilder import sequencer
 from partbuilder.plugins import Plugin
 
 
@@ -36,10 +37,13 @@ class LifecycleManager:
         local_plugins_dir: str = "",
         **custom_args,  # custom passthrough args
     ):
-        self._validator = Validator(parts)
-        self._validator.validate()
+        # self._validator = Validator(parts)
+        # self._validator.validate()
 
-        self._parts = [Part(name, p) for name, p in _parts.items()]
+        parts_data = parts.get("parts", {})
+        self._parts = [
+            Part(name, p, work_dir=work_dir) for name, p in parts_data.items()
+        ]
         self._build_packages = build_packages
         self._sequencer = sequencer.Sequencer(self._parts)
 
@@ -49,22 +53,15 @@ class LifecycleManager:
             platform_id=platform_id,
             platform_version_id=platform_version_id,
             parallel_build_count=parallel_build_count,
+            local_plugins_dir=local_plugins_dir,
         )
 
-    def clean(self, parts: List[str]) -> None:
+    def clean(self, parts: List[str] = []) -> None:
         pass
 
-    def pull(self, parts: List[str]) -> None:
-        steps = self._sequencer.run_to(State.PULL, parts)
-
-    def build(self, parts: List[str]) -> None:
-        steps = self._sequencer.run_to(State.BUILD, parts)
-
-    def stage(self, parts: List[str]) -> None:
-        steps = self._sequencer.run_to(State.STAGE, parts)
-
-    def prime(self, parts: List[str]) -> None:
-        steps = self._sequencer.run_to(State.PRIME, parts)
+    def actions(self, step: Step, parts: List[str] = []) -> None:
+        act = self._sequencer.actions(step, parts)
+        return act
 
 
 def register_pre_step_callback(
