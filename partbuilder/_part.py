@@ -24,7 +24,8 @@ class Part:
     def __init__(self, name: str, data: Dict[str, Any], *, work_dir: str = "."):
         self.name = name
         self.data = data
-        self.part_dir = os.path.join(work_dir, name)
+        parts_dir = os.path.join(work_dir, "parts")
+        self.part_dir = os.path.join(parts_dir, name)
         self.part_src_dir = os.path.join(self.part_dir, "src")
         self.part_build_dir = os.path.join(self.part_dir, "build")
         self.part_install_dir = os.path.join(self.part_dir, "install")
