@@ -150,6 +150,9 @@ class StateManager:
         self._outdated_reports: _OutdatedReport = collections.defaultdict(dict)
         self._dirty_reports: _DirtyReport = collections.defaultdict(dict)
 
+    def state(self, part: Part, step: Step) -> Optional[PartState]:
+        return self._eph_states.state(part_name=part.name, step=step)
+
     def should_step_run(self, part: Part, step: Step) -> bool:
         """Determine if a given step of a given part should run.
 

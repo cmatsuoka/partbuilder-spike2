@@ -108,7 +108,7 @@ class DirtyReport:
 
         return "".join(messages)
 
-    def get_summary(self) -> str:
+    def summary(self) -> str:
         """Get summarized report.
 
         :return: Short summary of why the part is dirty.

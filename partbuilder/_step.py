@@ -15,9 +15,13 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import enum
-from typing import List
+from typing import List, TYPE_CHECKING
 
 from partbuilder import errors
+
+
+if TYPE_CHECKING:
+    from partbuilder.sequencer.states import PartState
 
 
 @enum.unique
@@ -28,6 +32,11 @@ class Action(enum.IntEnum):
     STAGE = 3
     PRIME = 4
     SKIP = 5
+    REMOVE = 6
+    INSTALL_PKG = 7
+    INSTALL_STAGE_PKG = 8
+    UPDATE_PULL = 9
+    UPDATE_BUILD = 10
 
     def __repr__(self):
         return f"{self.__class__.__name__}.{self.name}"
@@ -52,6 +61,18 @@ class Step(enum.IntEnum):
             steps.append(Step.BUILD)
         if self >= Step.PRIME:
             steps.append(Step.STAGE)
+
+        return steps
+
+    def next_steps(self) -> List["Step"]:
+        steps = []
+
+        if self == Step.PULL:
+            steps.append(Step.BUILD)
+        if self <= Step.BUILD:
+            steps.append(Step.STAGE)
+        if self <= Step.STAGE:
+            steps.append(Step.PRIME)
 
         return steps
 
@@ -84,6 +105,13 @@ class PartAction:
     def __repr__(self):
         return f"{self.part_name}:{self.action!r}"
 
+    def state(self) -> "PartState":
+        return self._state
+
+    def set_state(self, value: "PartState") -> "PartAction":
+        self._state = value
+        return self
+
 
 class StepActions:
     def __init__(self, part_name: str, step: Step, *, comment: str = ""):
@@ -97,9 +125,9 @@ class StepActions:
 
     def __repr__(self):
         if self.comment:
-            return f"{self.part_name}:{self.step!r}: {self.actions!r} ({self.comment})"
+            return f"{self.part_name}:{self.step!r}: {self.actions} ({self.comment})"
         else:
-            return f"{self.part_name}:{self.step!r}: {self.actions!r}"
+            return f"{self.part_name}:{self.step!r}: {self.actions}"
 
 
 def dependency_prerequisite_step(step: Step) -> Step:

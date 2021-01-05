@@ -42,6 +42,8 @@ class Sequencer:
 
         self._actions = []
         for current_step in target_step.previous_steps() + [target_step]:
+            # TODO: if step is STAGE, check for collisions
+
             for p in selected_parts:
                 logger.debug(f"process {p.name}:Step.{current_step.name}")
                 self._add_step_actions(current_step, target_step, p, part_names)
@@ -56,7 +58,7 @@ class Sequencer:
         # check if step already ran, if not then run it
         if not self._sm.has_step_run(part, current_step):
             actions = StepActions(part.name, current_step)
-            actions.add(PartAction(part.name, current_step.to_action()))
+            self._run_step(part, current_step, actions=actions)
             self._actions.append(actions)
             return
 
@@ -67,7 +69,7 @@ class Sequencer:
 
         if part_names and current_step == target_step and part.name in part_names:
             actions = StepActions(part.name, current_step, comment="requested step")
-            actions.add(PartAction(part.name, current_step.to_action()))
+            self._rerun_step(part, current_step, actions=actions)
             self._actions.append(actions)
             return
 
@@ -77,7 +79,9 @@ class Sequencer:
 
         dirty_report = self._sm.dirty_report(part, current_step)
         if dirty_report:
-            self._handle_dirty(part, current_step, dirty_report)
+            actions = StepActions(part.name, step, comment=dirty_report.summary())
+            self._rerun_step(part, step, actions=actions)
+            self._actions.append(actions)
             return
 
         # 3. If the step is outdated, run it again (without cleaning if possible).
@@ -86,7 +90,14 @@ class Sequencer:
 
         outdated_report = self._sm.outdated_report(part, current_step)
         if outdated_report:
-            self._handle_outdated(part, current_step, dirty_report)
+            actions = StepActions(part.name, step, comment=outdated_report.summary())
+
+            if step == PULL or step == BUILD:
+                self._update_step(part, step, actions=actions)
+            else:
+                self._rerun_step(part, step, actions=actions)
+
+            self._actions.append(actions)
             return
 
         # 4. Otherwise just skip it
@@ -95,9 +106,10 @@ class Sequencer:
         actions.add(PartAction(part.name, Action.SKIP))
         self._actions.append(actions)
 
-    def _handle_dirty(self, part: Part, step: Step, dirty_report: DirtyReport,) -> None:
-        actions = StepActions(part.name, step, comment="dirty")
+    def _run_step(self, part: Part, step: Step, *, actions: StepActions):
+        actions.add(PartAction(part.name, step.to_action()).set_state(self._sm.state(part, step)))
 
+    def _rerun_step(self, part: Part, step: Step, *, actions: StepActions):
         # First clean the step, then run it again
         self.sm._clean_part(part, step, actions=actions)
 
@@ -107,11 +119,8 @@ class Sequencer:
         for current_step in [step] + step.next_steps():
             self._sm.clear_step(part, current_step)
 
-        actions.add(PartAction(part.name, current_step.to_action()))
+        actions.add(PartAction(part.name, Step.CLEAN))
+        self._run_step(part, step, actions=actions)
 
-    def _handle_outdated(
-        self, part: Part, step: Step, outdated_report: OutdatedReport
-    ) -> None:
-        actions = StepActions(part.name, step, comment="outdated")
-        actions.add(PartAction(part.name, step.to_action()))
-        self._actions.append(actions)
+    def _update_step(self, part: Part, step: Step, *, actions: StepActions):
+        pass
