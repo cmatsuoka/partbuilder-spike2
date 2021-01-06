@@ -15,10 +15,10 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import logging
-from typing import List
+from typing import List, Optional
 
 from .state_manager import StateManager, DirtyReport, OutdatedReport
-from partbuilder._step import Action, PartAction, Step, StepActions
+from partbuilder._step import Action, PartAction, Step
 from partbuilder._part import Part, sort_parts
 
 logger = logging.getLogger(__name__)
@@ -32,7 +32,7 @@ class Sequencer:
 
     def actions(
         self, target_step: Step, part_names: List[str] = []
-    ) -> List[StepActions]:
+    ) -> List[PartAction]:
         """Determine the list of steps to execute for each part."""
 
         if part_names:
@@ -57,9 +57,7 @@ class Sequencer:
 
         # check if step already ran, if not then run it
         if not self._sm.has_step_run(part, current_step):
-            actions = StepActions(part.name, current_step)
-            self._run_step(part, current_step, actions=actions)
-            self._actions.append(actions)
+            self._run_step(part, current_step)
             return
 
         # If the step has already run:
@@ -68,9 +66,7 @@ class Sequencer:
         #    explicitly listed, run it again.
 
         if part_names and current_step == target_step and part.name in part_names:
-            actions = StepActions(part.name, current_step, comment="requested step")
-            self._rerun_step(part, current_step, actions=actions)
-            self._actions.append(actions)
+            self._rerun_step(part, current_step, reason="requested step")
             return
 
         # 2. If the step is dirty, run it again. A step is considered dirty if
@@ -79,9 +75,7 @@ class Sequencer:
 
         dirty_report = self._sm.dirty_report(part, current_step)
         if dirty_report:
-            actions = StepActions(part.name, step, comment=dirty_report.summary())
-            self._rerun_step(part, step, actions=actions)
-            self._actions.append(actions)
+            self._rerun_step(part, step, actions=actions, reason=dirty_report.summary())
             return
 
         # 3. If the step is outdated, run it again (without cleaning if possible).
@@ -90,26 +84,42 @@ class Sequencer:
 
         outdated_report = self._sm.outdated_report(part, current_step)
         if outdated_report:
-            actions = StepActions(part.name, step, comment=outdated_report.summary())
-
             if step == PULL or step == BUILD:
-                self._update_step(part, step, actions=actions)
+                self._update_step(part, step, actions=actions, reason=outdated_report.summary())
             else:
-                self._rerun_step(part, step, actions=actions)
+                self._rerun_step(part, step, actions=actions, reason=outdated_report.summary())
 
-            self._actions.append(actions)
             return
 
         # 4. Otherwise just skip it
 
-        actions = StepActions(part.name, current_step, comment="already ran")
-        actions.add(PartAction(part.name, Action.SKIP))
-        self._actions.append(actions)
 
-    def _run_step(self, part: Part, step: Step, *, actions: StepActions):
-        actions.add(PartAction(part.name, step.to_action()).set_state(self._sm.state(part, step)))
+    def _run_step(self, part: Part, step: Step, *, reason: Optional[str]=None, rerun: bool=False):
+        #self._prepare_step()
 
-    def _rerun_step(self, part: Part, step: Step, *, actions: StepActions):
+        state = None
+
+        if step is Step.PULL:
+            pull_properties = dict()
+            part_build_packages = []  # self._grammar_processor.get_build_packages()
+            part_build_snaps = []     #self._grammar_processor.get_build_snaps()
+
+            # TODO: build pull state
+
+            self._actions.append(PartAction(part.name, Action.PULL, state=state))
+            self._sm.set_state(part=part, step=step, state=state)
+
+        if step is Step.BUILD:
+            # TODO: build and update ephemeral build state
+            pass
+
+        if rerun:
+            self._actions.append(PartAction(part.name, step.to_rerun_action(), reason=reason, state=state))
+        else:
+            self._actions.append(PartAction(part.name, step.to_action(), reason=reason, state=state))
+
+
+    def _rerun_step(self, part: Part, step: Step, *, reason: Optional[str]=None):
         # First clean the step, then run it again
         self.sm._clean_part(part, step, actions=actions)
 
@@ -119,8 +129,7 @@ class Sequencer:
         for current_step in [step] + step.next_steps():
             self._sm.clear_step(part, current_step)
 
-        actions.add(PartAction(part.name, Step.CLEAN))
-        self._run_step(part, step, actions=actions)
+        self._run_step(part, step, reason=reason, rerun=True)
 
-    def _update_step(self, part: Part, step: Step, *, actions: StepActions):
+    def _update_step(self, part: Part, step: Step):
         pass

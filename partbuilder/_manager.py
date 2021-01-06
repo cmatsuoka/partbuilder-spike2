@@ -18,7 +18,7 @@ from typing import Any, Callable, Dict, List
 
 from ._stepinfo import StepInfo
 from ._part import Part
-from ._step import Step, StepActions
+from ._step import Step, PartAction
 from partbuilder import sequencer
 from partbuilder.plugins import Plugin
 
@@ -59,7 +59,7 @@ class LifecycleManager:
     def clean(self, parts: List[str] = []) -> None:
         pass
 
-    def actions(self, step: Step, parts: List[str] = []) -> [StepActions]:
+    def actions(self, step: Step, parts: List[str] = []) -> [PartAction]:
         act = self._sequencer.actions(step, parts)
         return act
 

@@ -40,7 +40,7 @@ class PullState(PartState):
         self,
         property_names,
         part_properties=None,
-        config=None,
+        project=None,
         stage_packages=None,
         build_snaps=None,
         build_packages=None,
@@ -73,7 +73,7 @@ class PullState(PartState):
 
         # self.scriptlet_metadata = scriptlet_metadata
 
-        super().__init__(part_properties, config)
+        super().__init__(part_properties, project)
 
     def properties_of_interest(self, part_properties):
         """Extract the properties concerning this step from part_properties."""

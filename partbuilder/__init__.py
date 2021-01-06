@@ -18,5 +18,5 @@
 from ._manager import LifecycleManager  # noqa: F401
 from ._manager import register_pre_step_callback  # noqa: F401
 from ._manager import register_post_step_callback  # noqa: F401
-from ._step import Step  # noqa: F401
+from ._step import Action, Step, PartAction  # noqa: F401
 from .plugins import register_plugin  # noqa: F401

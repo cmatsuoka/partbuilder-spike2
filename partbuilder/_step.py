@@ -15,28 +15,21 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import enum
-from typing import List, TYPE_CHECKING
+from typing import List, Optional
 
 from partbuilder import errors
 
 
-if TYPE_CHECKING:
-    from partbuilder.sequencer.states import PartState
-
-
 @enum.unique
 class Action(enum.IntEnum):
-    CLEAN = 0
     PULL = 1
     BUILD = 2
     STAGE = 3
     PRIME = 4
-    SKIP = 5
-    REMOVE = 6
-    INSTALL_PKG = 7
-    INSTALL_STAGE_PKG = 8
-    UPDATE_PULL = 9
-    UPDATE_BUILD = 10
+    REPULL = 5
+    REBUILD = 6
+    RESTAGE = 7
+    REPRIME = 8
 
     def __repr__(self):
         return f"{self.__class__.__name__}.{self.name}"
@@ -88,6 +81,18 @@ class Step(enum.IntEnum):
 
         raise errors.PartbuilderInternalError(f"Invalid step {self!s}")
 
+    def to_rerun_action(self) -> Action:
+        if self == Step.PULL:
+            return Action.REPULL
+        if self == Step.BUILD:
+            return Action.REBUILD
+        if self == Step.STAGE:
+            return Action.RESTAGE
+        if self == Step.PRIME:
+            return Action.REPRIME
+
+        raise errors.PartbuilderInternalError(f"Invalid step {self!s}")
+
 
 STEPS = [
     Step.PULL,
@@ -98,36 +103,14 @@ STEPS = [
 
 
 class PartAction:
-    def __init__(self, part_name: str, action: Action):
+    def __init__(self, part_name: str, action: Action, *, reason: Optional[str]=None, state=None):
         self.part_name = part_name
         self.action = action
+        self.state = state
+        self.reason = reason
 
     def __repr__(self):
         return f"{self.part_name}:{self.action!r}"
-
-    def state(self) -> "PartState":
-        return self._state
-
-    def set_state(self, value: "PartState") -> "PartAction":
-        self._state = value
-        return self
-
-
-class StepActions:
-    def __init__(self, part_name: str, step: Step, *, comment: str = ""):
-        self.part_name = part_name
-        self.step = step
-        self.actions = []  # type: List[PartAction]
-        self.comment = comment
-
-    def add(self, pact: PartAction) -> None:
-        self.actions.append(pact)
-
-    def __repr__(self):
-        if self.comment:
-            return f"{self.part_name}:{self.step!r}: {self.actions} ({self.comment})"
-        else:
-            return f"{self.part_name}:{self.step!r}: {self.actions}"
 
 
 def dependency_prerequisite_step(step: Step) -> Step:

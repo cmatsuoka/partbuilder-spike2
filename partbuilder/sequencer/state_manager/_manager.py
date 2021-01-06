@@ -24,8 +24,6 @@ from partbuilder._part import Part, get_dependencies
 from partbuilder._step import (
     STEPS,
     Step,
-    StepActions,
-    PartAction,
     dependency_prerequisite_step,
 )
 from ._dirty_report import DirtyReport
@@ -152,6 +150,9 @@ class StateManager:
 
     def state(self, part: Part, step: Step) -> Optional[PartState]:
         return self._eph_states.state(part_name=part.name, step=step)
+
+    def set_state(self, part: Part, step: Step, *, state: PartState) -> None:
+        self._eph_states.add(part_name=part.name, step=step, state=state)
 
     def should_step_run(self, part: Part, step: Step) -> bool:
         """Determine if a given step of a given part should run.
@@ -335,11 +336,10 @@ class StateManager:
             return True
         return step > latest_step
 
-    def _clean_part(self, part: Part, step: Step, *, actions: StepActions) -> None:
+    def _clean_part(self, part: Part, step: Step) -> None:
         for s in reversed(STEPS):
             if step <= s:
                 if not self.is_state_clean_for_part(part, step=s):
-                    actions.add(PartAction(part.name, s.to_action()))
                     self._mark_step_clean_for_part(part, step=s)
 
     def _mark_step_clean_for_part(self, part: Part, step: Step):

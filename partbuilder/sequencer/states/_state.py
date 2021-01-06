@@ -23,9 +23,10 @@ from partbuilder.utils import yaml_utils, file_utils
 
 
 class State(yaml_utils.YAMLObject):
-    def __init__(self, yaml_data: Dict[str, Any]):
+    def __init__(self, yaml_data: Dict[str, Any] = None):
         self.timestamp = None
-        self.__dict__.update(yaml_data)
+        if yaml_data:
+            self.__dict__.update(yaml_data)
 
     def __repr__(self):
         items = sorted(self.__dict__.items())
