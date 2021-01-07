@@ -14,12 +14,12 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from typing import Any, Callable, Dict, List
+from typing import Any, Callable, Dict, List, Optional
 
 from ._stepinfo import StepInfo
 from ._part import Part
 from ._step import Step, PartAction
-from partbuilder import sequencer
+from partbuilder import executor, sequencer
 from partbuilder.plugins import Plugin
 
 
@@ -62,6 +62,19 @@ class LifecycleManager:
     def actions(self, target_step: Step, part_names: List[str] = []) -> [PartAction]:
         act = self._sequencer.actions(target_step, part_names)
         return act
+
+    def execute(self, actions: [PartAction]):
+        for act in actions:
+            part = part_with_name(self._parts, act.part_name)
+            executor.run_action(act.action, part=part, step_info=self._step_info)
+
+
+def part_with_name(parts: [Part], name: str) -> Optional[Part]:
+    for p in parts:
+        if p.name is name:
+            return p
+
+    return None
 
 
 def register_pre_step_callback(

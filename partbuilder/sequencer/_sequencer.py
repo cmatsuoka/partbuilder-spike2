@@ -19,8 +19,8 @@ from typing import List, Optional
 
 from .state_manager import StateManager, DirtyReport, OutdatedReport
 from .states import PartState
-from partbuilder._step import Action, PartAction, Step
-from partbuilder._part import Part, sort_parts
+from partbuilder._step import Action, dependency_prerequisite_step, PartAction, Step
+from partbuilder._part import get_dependencies, Part, sort_parts
 
 logger = logging.getLogger(__name__)
 
@@ -36,12 +36,17 @@ class Sequencer:
     ) -> List[PartAction]:
         """Determine the list of steps to execute for each part."""
 
+        self._actions = []
+        self._add_all_actions(target_step, part_names)
+        return self._actions
+
+
+    def _add_all_actions(self, target_step: Step, part_names: List[str] = []) -> None:
         if part_names:
             selected_parts = [p for p in self._parts if p.name in part_names]
         else:
             selected_parts = self._parts
 
-        self._actions = []
         for current_step in target_step.previous_steps() + [target_step]:
             # TODO: if step is STAGE, check for collisions
 
@@ -49,7 +54,6 @@ class Sequencer:
                 logger.debug(f"process {p.name}:Step.{current_step.name}")
                 self._add_step_actions(current_step, target_step, p, part_names)
 
-        return self._actions
 
     def _add_step_actions(
         self, current_step: Step, target_step: Step, part: Part, part_names: List[str]
@@ -76,7 +80,8 @@ class Sequencer:
 
         dirty_report = self._sm.dirty_report(part, current_step)
         if dirty_report:
-            self._rerun_step(part, step, actions=actions, reason=dirty_report.summary())
+            logger.debug(f"{part.name}:{current_step!r} is dirty: {dirty_report.summary()}")
+            self._rerun_step(part, current_step, reason=dirty_report.summary())
             return
 
         # 3. If the step is outdated, run it again (without cleaning if possible).
@@ -85,18 +90,29 @@ class Sequencer:
 
         outdated_report = self._sm.outdated_report(part, current_step)
         if outdated_report:
+            logger.debug(f"{part.name}:{current_step!r} is outdated")
             if step == PULL or step == BUILD:
-                self._update_step(part, step, actions=actions, reason=outdated_report.summary())
+                self._update_step(part, step, reason=outdated_report.summary())
             else:
-                self._rerun_step(part, step, actions=actions, reason=outdated_report.summary())
+                self._rerun_step(part, step, reason=outdated_report.summary())
 
             return
 
         # 4. Otherwise just skip it
 
 
-    def _run_step(self, part: Part, step: Step, *, reason: Optional[str]=None, rerun: bool=False):
-        #self._prepare_step()
+    def _prepare_step(self, part: Part, step: Step) -> None:
+        all_deps = get_dependencies(part.name, parts=self._parts)
+        prerequisite_step = dependency_prerequisite_step(step)
+        deps = { p for p in all_deps if self._sm.should_step_run(p, prerequisite_step) }
+
+        if deps:
+            for d in deps:
+                self._add_all_actions(target_step=prerequisite_step, part_names=[d.name])
+
+
+    def _run_step(self, part: Part, step: Step, *, reason: Optional[str]=None, rerun: bool=False) -> None:
+        self._prepare_step(part, step)
 
         state = None
 
@@ -118,10 +134,12 @@ class Sequencer:
         else:
             self._add_action(part, step.to_action(), reason=reason, state=state)
 
+        self._sm.add_step_run(part, step)
 
-    def _rerun_step(self, part: Part, step: Step, *, reason: Optional[str]=None):
+
+    def _rerun_step(self, part: Part, step: Step, *, reason: Optional[str]=None) -> None:
         # First clean the step, then run it again
-        self.sm._clean_part(part, step, actions=actions)
+        self._sm.clean_part(part, step)
 
         # Uncache this and later steps since we just cleaned them: their status
         # has changed
@@ -133,6 +151,7 @@ class Sequencer:
 
     def _update_step(self, part: Part, step: Step):
         pass
+
 
 
     def _add_action(self, part: Part, action: Action, *, reason: Optional[str]=None, state: Optional[PartState]=None) -> None:

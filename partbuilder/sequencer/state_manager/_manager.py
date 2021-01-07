@@ -67,7 +67,7 @@ class _EphemeralStates:
         self._state[part_name][step] = state
 
     def remove(self, *, part_name: str, step: Step) -> None:
-        self._state[part_name].remove(step)
+        self._state[part_name].pop(step)
 
     def test(self, *, part_name: str, step: Step) -> bool:
         return step in self._state[part_name]
@@ -176,9 +176,9 @@ class StateManager:
         ):
             return True
 
-        previous_step = step.previous_step()
-        if previous_step:
-            return self.should_step_run(part, previous_step)
+        previous_steps = step.previous_steps()
+        if previous_steps:
+            return self.should_step_run(part, previous_steps[-1])
 
         return False
 
@@ -259,7 +259,10 @@ class StateManager:
 
         # Get the dirty report from the PluginHandler. If it's dirty, we can
         # stop here
-        self._dirty_reports[part.name][step] = self._eph_states.dirty_report_for_part(part_name=part.name, step=step)
+        dr = self._eph_states.dirty_report_for_part(part_name=part.name, step=step)
+        self._dirty_reports[part.name][step] = dr
+        if dr:
+            return
 
         # The dirty report from the PluginHandler only takes into account
         # properties specific to that part. If it's not dirty because of those,
@@ -274,7 +277,6 @@ class StateManager:
 
         # timestamp = part.step_timestamp(step)
         this_state = self._eph_states.state(part_name=part.name, step=step)
-        timestamp = this_state.timestamp
 
         for dependency in dependencies:
             # Make sure the prerequisite step of this dependency has not
@@ -282,12 +284,12 @@ class StateManager:
             # try:
                 # prerequisite_timestamp = dependency.step_timestamp(prerequisite_step)
 
-            prerequisite_state = self._eph_states.state(part_name=dependency.name, step=step)
-            if not prerequisite_state:
-                dependency_changed = True
+            prerequisite_state = self._eph_states.state(part_name=dependency.name, step=prerequisite_step)
+            if prerequisite_state and this_state:
+                prerequisite_timestamp = prerequisite_state.timestamp
+                dependency_changed = this_state.timestamp < prerequisite_timestamp
             else: 
-                prerequisite_timestamp = prequisite_state.timestamp
-                dependency_changed = this_timestamp < prerequisite_timestamp
+                dependency_changed = False
 
             # except errors.StepHasNotRunError:
             #     dependency_changed = True
@@ -314,7 +316,7 @@ class StateManager:
 
         return steps_run
 
-    def _should_step_run_for_part(self, *, step: Step, part: Part) -> bool:
+    def _should_step_run_for_part(self, *, part: Part, step: Step) -> bool:
         """Return true if the given step hasn't run (or has been cleaned)."""
 
         latest_step = self._latest_step_for_part(part)
@@ -336,15 +338,15 @@ class StateManager:
             return True
         return step > latest_step
 
-    def _clean_part(self, part: Part, step: Step) -> None:
+    def clean_part(self, part: Part, step: Step) -> None:
         for s in reversed(STEPS):
             if step <= s:
-                if not self.is_state_clean_for_part(part, step=s):
-                    self._mark_step_clean_for_part(part, step=s)
+                if not self.is_state_clean_for_part(part=part, step=s):
+                    self._mark_step_clean_for_part(part=part, step=s)
 
     def _mark_step_clean_for_part(self, part: Part, step: Step):
         # remove state from ephemeral cache
-        pass
+        self._eph_states.remove(part_name=part.name, step=step)
 
 
 def _remove_key_from_dict(c: Dict[Any, Any], key: Any) -> None:

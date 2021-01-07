@@ -18,7 +18,10 @@ def msg(a: partbuilder.PartAction):
         Action.REPRIME: "Repriming",
     }
 
-    return f"{action_message[a.action]} {a.part_name}"
+    if a.reason:
+        return f"{action_message[a.action]} {a.part_name} (because {a.reason})"
+    else:
+        return f"{action_message[a.action]} {a.part_name}"
 
 
 def parse_step(s: str) -> Step:
@@ -46,6 +49,8 @@ def main():
 
     for a in actions:
         print(msg(a))
+
+    lf.execute(actions)
 
 
 if __name__ == "__main__":
