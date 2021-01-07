@@ -18,6 +18,7 @@ import logging
 from typing import List, Optional
 
 from .state_manager import StateManager, DirtyReport, OutdatedReport
+from .states import PartState
 from partbuilder._step import Action, PartAction, Step
 from partbuilder._part import Part, sort_parts
 
@@ -106,7 +107,6 @@ class Sequencer:
 
             # TODO: build pull state
 
-            self._actions.append(PartAction(part.name, Action.PULL, state=state))
             self._sm.set_state(part=part, step=step, state=state)
 
         if step is Step.BUILD:
@@ -114,9 +114,9 @@ class Sequencer:
             pass
 
         if rerun:
-            self._actions.append(PartAction(part.name, step.to_rerun_action(), reason=reason, state=state))
+            self._add_action(part, step.to_rerun_action(), reason=reason, state=state)
         else:
-            self._actions.append(PartAction(part.name, step.to_action(), reason=reason, state=state))
+            self._add_action(part, step.to_action(), reason=reason, state=state)
 
 
     def _rerun_step(self, part: Part, step: Step, *, reason: Optional[str]=None):
@@ -133,3 +133,8 @@ class Sequencer:
 
     def _update_step(self, part: Part, step: Step):
         pass
+
+
+    def _add_action(self, part: Part, action: Action, *, reason: Optional[str]=None, state: Optional[PartState]=None) -> None:
+        logger.debug(f"add action {part.name}:{action!r}")
+        self._actions.append(PartAction(part.name, action, reason=reason, state=state))

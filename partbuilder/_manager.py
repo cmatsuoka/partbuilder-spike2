@@ -56,11 +56,11 @@ class LifecycleManager:
             local_plugins_dir=local_plugins_dir,
         )
 
-    def clean(self, parts: List[str] = []) -> None:
+    def clean(self, part_list: List[str] = []) -> None:
         pass
 
-    def actions(self, step: Step, parts: List[str] = []) -> [PartAction]:
-        act = self._sequencer.actions(step, parts)
+    def actions(self, target_step: Step, part_names: List[str] = []) -> [PartAction]:
+        act = self._sequencer.actions(target_step, part_names)
         return act
 
 

@@ -1,0 +1,10 @@
+parts:
+  bar:
+    after: [foo]
+    plugin: nil
+
+  foo:
+    plugin: nil
+
+  foobar:
+    plugin: nil
