@@ -41,7 +41,8 @@ class Sequencer:
         return self._actions
 
 
-    def _add_all_actions(self, target_step: Step, part_names: List[str] = []) -> None:
+    def _add_all_actions(self, target_step: Step, part_names: List[str] = [], reason: Optional[str]=None) -> None:
+        print(f"ADD ACTIONS REASON {reason}")
         if part_names:
             selected_parts = [p for p in self._parts if p.name in part_names]
         else:
@@ -52,17 +53,17 @@ class Sequencer:
 
             for p in selected_parts:
                 logger.debug(f"process {p.name}:Step.{current_step.name}")
-                self._add_step_actions(current_step, target_step, p, part_names)
+                self._add_step_actions(current_step, target_step, p, part_names, reason=reason)
 
 
     def _add_step_actions(
-        self, current_step: Step, target_step: Step, part: Part, part_names: List[str]
+        self, current_step: Step, target_step: Step, part: Part, part_names: List[str], reason: Optional[str]=None
     ) -> None:
         """Verify if this step should be executed."""
 
         # check if step already ran, if not then run it
         if not self._sm.has_step_run(part, current_step):
-            self._run_step(part, current_step)
+            self._run_step(part, current_step, reason=reason)
             return
 
         # If the step has already run:
@@ -109,7 +110,7 @@ class Sequencer:
             deps = { p for p in all_deps if self._sm.should_step_run(p, prerequisite_step) }
 
             for d in deps:
-                self._add_all_actions(target_step=prerequisite_step, part_names=[d.name])
+                self._add_all_actions(target_step=prerequisite_step, part_names=[d.name], reason=f"required by {part.name!r}")
 
 
     def _run_step(self, part: Part, step: Step, *, reason: Optional[str]=None, rerun: bool=False) -> None:
@@ -159,3 +160,4 @@ class Sequencer:
     def _add_action(self, part: Part, action: Action, *, reason: Optional[str]=None, state: Optional[PartState]=None) -> None:
         logger.debug(f"add action {part.name}:{action!r}")
         self._actions.append(PartAction(part.name, action, reason=reason, state=state))
+

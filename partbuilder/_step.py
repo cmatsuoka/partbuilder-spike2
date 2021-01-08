@@ -74,44 +74,34 @@ class Step(enum.IntEnum):
         return steps
 
 
-
 def action_for_step(step: Step) -> Action:
-    if step == Step.PULL:
-        return Action.PULL
-    if step == Step.BUILD:
-        return Action.BUILD
-    if step == Step.STAGE:
-        return Action.STAGE
-    if step == Step.PRIME:
-        return Action.PRIME
-
-    raise errors.PartbuilderInternalError(f"Invalid step {step!s}")
+    acts = {
+        Step.PULL: Action.PULL,
+        Step.BUILD: Action.BUILD,
+        Step.STAGE: Action.STAGE,
+        Step.PRIME: Action.PRIME,
+    }
+    return acts[step]
 
 
 def rerun_action_for_step(step: Step) -> Action:
-    if step == Step.PULL:
-        return Action.REPULL
-    if step == Step.BUILD:
-        return Action.REBUILD
-    if step == Step.STAGE:
-        return Action.RESTAGE
-    if step == Step.PRIME:
-        return Action.REPRIME
-
-    raise errors.PartbuilderInternalError(f"Invalid step {step!s}")
+    acts = {
+        Step.PULL: Action.REPULL,
+        Step.BUILD: Action.REBUILD,
+        Step.STAGE: Action.RESTAGE,
+        Step.PRIME: Action.REPRIME,
+    }
+    return acts[step]
 
 
 def skip_action_for_step(step: Step) -> Action:
-    if step == Step.PULL:
-        return Action.SKIP_PULL
-    if step == Step.BUILD:
-        return Action.SKIP_BUILD
-    if step == Step.STAGE:
-        return Action.SKIP_STAGE
-    if step == Step.PRIME:
-        return Action.SKIP_PRIME
-
-    raise errors.PartbuilderInternalError(f"Invalid step {step!s}")
+    acts = {
+        Step.PULL: Action.SKIP_PULL,
+        Step.BUILD: Action.SKIP_BUILD,
+        Step.STAGE: Action.SKIP_STAGE,
+        Step.PRIME: Action.SKIP_PRIME,
+    }
+    return acts[step]
 
 
 STEPS = [
