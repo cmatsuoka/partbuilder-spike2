@@ -103,10 +103,10 @@ class Sequencer:
 
     def _prepare_step(self, part: Part, step: Step) -> None:
         all_deps = get_dependencies(part.name, parts=self._parts)
-        prerequisite_step = dependency_prerequisite_step(step)
-        deps = { p for p in all_deps if self._sm.should_step_run(p, prerequisite_step) }
+        if step > Step.PULL:  # With v2 plugins we don't need to stage dependencies before PULL
+            prerequisite_step = dependency_prerequisite_step(step)
+            deps = { p for p in all_deps if self._sm.should_step_run(p, prerequisite_step) }
 
-        if deps:
             for d in deps:
                 self._add_all_actions(target_step=prerequisite_step, part_names=[d.name])
 
@@ -138,6 +138,7 @@ class Sequencer:
 
 
     def _rerun_step(self, part: Part, step: Step, *, reason: Optional[str]=None) -> None:
+        logger.debug(f"rerun step {part.name}:{step!r}")
         # First clean the step, then run it again
         self._sm.clean_part(part, step)
 

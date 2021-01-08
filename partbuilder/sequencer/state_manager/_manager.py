@@ -222,7 +222,7 @@ class StateManager:
         :rtype: DirtyReport
         """
         self._ensure_dirty_report(part, step)
-        return self._dirty_reports[part.name][step]
+        return self._dirty_reports[part.name].get(step, None)
 
     def clear_step(self, part: Part, step: Step) -> None:
         """Clear the given step of the given part from the cache.
@@ -255,6 +255,9 @@ class StateManager:
     def _ensure_dirty_report(self, part: Part, step: Step) -> None:
         # If we already have a dirty report, bail
         if step in self._dirty_reports[part.name]:
+            return
+
+        if step is Step.PULL:  # With V2 plugins we don't need to repull if dependency is restaged
             return
 
         # Get the dirty report from the PluginHandler. If it's dirty, we can
