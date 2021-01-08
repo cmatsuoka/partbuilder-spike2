@@ -19,7 +19,7 @@ from typing import List, Optional
 
 from .state_manager import StateManager, DirtyReport, OutdatedReport
 from .states import PartState
-from partbuilder._step import Action, dependency_prerequisite_step, PartAction, Step
+from partbuilder._step import Action, dependency_prerequisite_step, PartAction, Step, action_for_step, rerun_action_for_step, skip_action_for_step
 from partbuilder._part import get_dependencies, Part, sort_parts
 
 logger = logging.getLogger(__name__)
@@ -99,6 +99,7 @@ class Sequencer:
             return
 
         # 4. Otherwise just skip it
+        self._add_action(part, skip_action_for_step(current_step), reason="already ran")
 
 
     def _prepare_step(self, part: Part, step: Step) -> None:
@@ -130,9 +131,9 @@ class Sequencer:
             pass
 
         if rerun:
-            self._add_action(part, step.to_rerun_action(), reason=reason, state=state)
+            self._add_action(part, rerun_action_for_step(step), reason=reason, state=state)
         else:
-            self._add_action(part, step.to_action(), reason=reason, state=state)
+            self._add_action(part, action_for_step(step), reason=reason, state=state)
 
         self._sm.add_step_run(part, step)
 

@@ -30,6 +30,10 @@ class Action(enum.IntEnum):
     REBUILD = 6
     RESTAGE = 7
     REPRIME = 8
+    SKIP_PULL = 9
+    SKIP_BUILD = 10
+    SKIP_STAGE = 11
+    SKIP_PRIME = 12
 
     def __repr__(self):
         return f"{self.__class__.__name__}.{self.name}"
@@ -69,29 +73,45 @@ class Step(enum.IntEnum):
 
         return steps
 
-    def to_action(self) -> Action:
-        if self == Step.PULL:
-            return Action.PULL
-        if self == Step.BUILD:
-            return Action.BUILD
-        if self == Step.STAGE:
-            return Action.STAGE
-        if self == Step.PRIME:
-            return Action.PRIME
 
-        raise errors.PartbuilderInternalError(f"Invalid step {self!s}")
 
-    def to_rerun_action(self) -> Action:
-        if self == Step.PULL:
-            return Action.REPULL
-        if self == Step.BUILD:
-            return Action.REBUILD
-        if self == Step.STAGE:
-            return Action.RESTAGE
-        if self == Step.PRIME:
-            return Action.REPRIME
+def action_for_step(step: Step) -> Action:
+    if step == Step.PULL:
+        return Action.PULL
+    if step == Step.BUILD:
+        return Action.BUILD
+    if step == Step.STAGE:
+        return Action.STAGE
+    if step == Step.PRIME:
+        return Action.PRIME
 
-        raise errors.PartbuilderInternalError(f"Invalid step {self!s}")
+    raise errors.PartbuilderInternalError(f"Invalid step {step!s}")
+
+
+def rerun_action_for_step(step: Step) -> Action:
+    if step == Step.PULL:
+        return Action.REPULL
+    if step == Step.BUILD:
+        return Action.REBUILD
+    if step == Step.STAGE:
+        return Action.RESTAGE
+    if step == Step.PRIME:
+        return Action.REPRIME
+
+    raise errors.PartbuilderInternalError(f"Invalid step {step!s}")
+
+
+def skip_action_for_step(step: Step) -> Action:
+    if step == Step.PULL:
+        return Action.SKIP_PULL
+    if step == Step.BUILD:
+        return Action.SKIP_BUILD
+    if step == Step.STAGE:
+        return Action.SKIP_STAGE
+    if step == Step.PRIME:
+        return Action.SKIP_PRIME
+
+    raise errors.PartbuilderInternalError(f"Invalid step {step!s}")
 
 
 STEPS = [

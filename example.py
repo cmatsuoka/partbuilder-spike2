@@ -13,13 +13,17 @@ def msg(a: partbuilder.PartAction):
         Action.STAGE: "Staging",
         Action.PRIME: "Priming",
         Action.REPULL: "Repulling",
-        Action.REBUILD: "Rebuildng",
+        Action.REBUILD: "Rebuilding",
         Action.RESTAGE: "Restaging",
         Action.REPRIME: "Repriming",
+        Action.SKIP_PULL: "Skipping pull for",
+        Action.SKIP_BUILD: "Skipping build for",
+        Action.SKIP_STAGE: "Skipping stage for",
+        Action.SKIP_PRIME: "Skipping prime for",
     }
 
     if a.reason:
-        return f"{action_message[a.action]} {a.part_name} (because {a.reason})"
+        return f"{action_message[a.action]} {a.part_name} ({a.reason})"
     else:
         return f"{action_message[a.action]} {a.part_name}"
 
